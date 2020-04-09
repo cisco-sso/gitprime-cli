@@ -1,9 +1,9 @@
 package v1
 
 import (
-	"io/ioutil"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"regexp"
 
 	"github.com/sirupsen/logrus"
@@ -163,8 +163,8 @@ func parseTeamMembershipListToTeamMembershipMap(payload interface{}, userIdMap U
 }
 
 type OrgTeamList []struct {
-		Name    string   `json:"name"`
-		Members []string `json:"members"`
+	Name    string   `json:"name"`
+	Members []string `json:"members"`
 }
 
 func parseOrgTeamList(payloadFile string) OrgTeamList {

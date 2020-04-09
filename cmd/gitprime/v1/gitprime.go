@@ -54,26 +54,33 @@ func Execute() {
 
 		///////////////////////////////////////
 		// gitprime teams
-		app_Team             = app.Command("team", "Team commands")
-		app_Team_List        = app_Team.Command("list", "List all teams")
-		app_Team_Get         = app_Team.Command("get", "Get a specific team")
-		app_Team_Get__TeamId = app_Team_Get.Arg("team-id", "ID of the team").Required().Int64()
-		app_Team_Create         = app_Team.Command("create", "Create a new team")
-		app_Team_Create__TeamName = app_Team_Create.Arg("team-name", "Name of the team").Required().String()
-		app_Team_Create__TeamDescription = app_Team_Create.Flag("team-description", "Description of the team").Default("").String()
-		app_Team_Create__TeamParentId = app_Team_Create.Flag("team-parent-id", "ID of the parent team").Int64()
-		app_Team_Create__TeamOrgId = app_Team_Create.Flag("team-org-id", "ID of the org team").Default("1").Int64()
-		app_Team_Create__TeamDepth = app_Team_Create.Flag("team-depth", "Depth of the team").Default("inherit").String()
-		app_Team_Create__TeamVisibility = app_Team_Create.Flag("team-visibility", "Visibility of the team").Default("SHOW").String()
-		app_Team_Delete         = app_Team.Command("delete", "Delete a specific team")
-		app_Team_Delete__TeamId = app_Team_Delete.Arg("team-id", "ID of the team").Required().Int64()
+		app_Team                         = app.Command("team", "Team commands")
+		app_Team_List                    = app_Team.Command("list", "List all teams")
+		app_Team_Get                     = app_Team.Command("get", "Get a specific team")
+		app_Team_Get__TeamId             = app_Team_Get.Arg("id", "ID of the team").Required().Int64()
+		app_Team_Create                  = app_Team.Command("create", "Create a new team")
+		app_Team_Create__TeamName        = app_Team_Create.Arg("name", "Name of the team").Required().String()
+		app_Team_Create__TeamDescription = app_Team_Create.Flag("description", "Description of the team").Default("").String()
+		app_Team_Create__TeamParentId    = app_Team_Create.Flag("parent-id", "ID of the parent team").Int64()
+		app_Team_Create__TeamOrgId       = app_Team_Create.Flag("org-id", "ID of the org").Default("1").Int64()
+		app_Team_Create__TeamDepth       = app_Team_Create.Flag("depth", "Depth of the team").Default("inherit").String()
+		app_Team_Create__TeamVisibility  = app_Team_Create.Flag("visibility", "Visibility of the team").Default("SHOW").String()
+		app_Team_Delete                  = app_Team.Command("delete", "Delete a specific team")
+		app_Team_Delete__TeamId          = app_Team_Delete.Arg("id", "ID of the team").Required().Int64()
 
 		///////////////////////////////////////
-		// gitprime teammemberships
-		app_TeamMembership                       = app.Command("teammembership", "Team membership commands")
-		app_TeamMembership_List                  = app_TeamMembership.Command("list", "List all teams")
-		app_TeamMembership_Get                   = app_TeamMembership.Command("get", "Get a specific teammembership")
-		app_TeamMembership_Get__TeamMembershipId = app_TeamMembership_Get.Arg("teammembership-id", "ID of the teammembership").Required().Int64()
+		// gitprime teammembership
+		app_TeamMembership                                  = app.Command("teammembership", "Team membership commands")
+		app_TeamMembership_List                             = app_TeamMembership.Command("list", "List all teams")
+		app_TeamMembership_Get                              = app_TeamMembership.Command("get", "Get a specific teammembership")
+		app_TeamMembership_Get__TeamMembershipId            = app_TeamMembership_Get.Arg("id", "ID of the teammembership").Required().Int64()
+		app_TeamMembership_Create                           = app_TeamMembership.Command("create", "Create a new teammembership")
+		app_TeamMembership_Create__TeamMembershipApexUserId = app_TeamMembership_Create.Arg("user-id", "ID of the apex user").Required().Int64()
+		app_TeamMembership_Create__TeamMembershipTeamId     = app_TeamMembership_Create.Arg("team-id", "ID of the team").Required().Int64()
+		app_TeamMembership_Create__TeamMembershipDepth      = app_TeamMembership_Create.Flag("depth", "Depth of the teammembership").Default("inherit").String()
+		app_TeamMembership_Create__TeamMembershipType       = app_TeamMembership_Create.Flag("type", "Type of the teammembership").Default("contributor").String()
+		app_TeamMembership_Delete                           = app_TeamMembership.Command("delete", "Delete a specific teammembership")
+		app_TeamMembership_Delete__TeamMembershipId         = app_TeamMembership_Delete.Arg("id", "ID of the teammembership").Required().Int64()
 
 		///////////////////////////////////////
 		// gitprime users
@@ -163,12 +170,12 @@ func Execute() {
 		f := func() (interface{}, error) {
 			params := api_teams.NewTeamsCreateParams()
 			params.Data = api_teams.TeamsCreateBody{
-				Name: app_Team_Create__TeamName,
-				Parent: *app_Team_Create__TeamParentId,
+				Name:        app_Team_Create__TeamName,
+				Parent:      *app_Team_Create__TeamParentId,
 				Description: *app_Team_Create__TeamDescription,
-				Org: app_Team_Create__TeamOrgId,
-				Depth: app_Team_Create__TeamDepth,
-				Visibility: app_Team_Create__TeamVisibility,
+				Org:         app_Team_Create__TeamOrgId,
+				Depth:       app_Team_Create__TeamDepth,
+				Visibility:  app_Team_Create__TeamVisibility,
 			}
 			return client.Teams.TeamsCreate(params, authInfo)
 		}
@@ -195,6 +202,27 @@ func Execute() {
 			params := api_teamMembership.NewTeamMembershipReadParams()
 			params.ID = *app_TeamMembership_Get__TeamMembershipId
 			return client.TeamMembership.TeamMembershipRead(params, authInfo)
+		}
+		printPayload(f, log)
+
+	case app_TeamMembership_Create.FullCommand():
+		f := func() (interface{}, error) {
+			params := api_teamMembership.NewTeamMembershipCreateParams()
+			params.Data = api_teamMembership.TeamMembershipCreateBody{
+				ApexUserID:     app_TeamMembership_Create__TeamMembershipApexUserId,
+				TeamID:         app_TeamMembership_Create__TeamMembershipTeamId,
+				Depth:          app_TeamMembership_Create__TeamMembershipDepth,
+				MembershipType: *app_TeamMembership_Create__TeamMembershipType,
+			}
+			return client.TeamMembership.TeamMembershipCreate(params, authInfo)
+		}
+		printPayload(f, log)
+
+	case app_TeamMembership_Delete.FullCommand():
+		f := func() (interface{}, error) {
+			params := api_teamMembership.NewTeamMembershipDeleteParams()
+			params.ID = *app_TeamMembership_Delete__TeamMembershipId
+			return client.TeamMembership.TeamMembershipDelete(params, authInfo)
 		}
 		printPayload(f, log)
 
@@ -253,7 +281,6 @@ func Execute() {
 		// print out the memberships
 		out, _ = json.MarshalIndent(teamMembershipMap, "", "  ")
 		fmt.Println(string(out))
-
 
 	case appVersion.FullCommand():
 		type Version struct {
