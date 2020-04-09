@@ -29,6 +29,12 @@ const (
 	TimeFormat = time.RFC3339
 )
 
+var log *logger.Logger
+
+func init() {
+	log = logger.New()
+}
+
 func Execute() {
 
 	// Start the profiler and defer stopping it until the program exits.
@@ -52,6 +58,11 @@ func Execute() {
 		app_Team_List        = app_Team.Command("list", "List all teams")
 		app_Team_Get         = app_Team.Command("get", "Get a specific team")
 		app_Team_Get__TeamId = app_Team_Get.Arg("team-id", "ID of the team").Required().Int64()
+		app_Team_Create         = app_Team.Command("create", "Create a specific team")
+		app_Team_Create__TeamName = app_Team_Get.Arg("team-name", "Name of the team").Required().String()
+		app_Team_Create__TeamDescription = app_Team_Get.Arg("team-description", "Description of the team").String()
+		app_Team_Delete         = app_Team.Command("delete", "Delete a specific team")
+		app_Team_Delete__TeamId = app_Team_Delete.Arg("team-id", "ID of the team").Required().Int64()
 
 		///////////////////////////////////////
 		// gitprime teammemberships
@@ -75,10 +86,17 @@ func Execute() {
 		app_UserAlias_Get__UserAliasId = app_UserAlias_Get.Arg("useralias-id", "ID of the useralias").Required().Int64()
 
 		///////////////////////////////////////
+		// gitprime sync
+		app_Sync                              = app.Command("sync", "Sync commands")
+		app_Sync_Team                         = app_Sync.Command("team", "Team sync command")
+		app_Sync_Team__TeamJsonFile           = app_Sync_Team.Arg("team-json-file", "TeamJson File").Required().ExistingFile()
+		app_Sync_Team__RegexFilterEmailDomain = app_Sync_Team.Flag("regex-filter-email-domain", "Valid users will match this regex [e.g. '.*@domain.com']").Default(".*").Regexp()
+		app_Sync_Team__TeamDescriptionTag     = app_Sync_Team.Flag("team-description-tag", "Tag to be added to Team description to track that a team is managed by this tool").Default("gitprime-cli(donotedit,autogen)").String()
+
+		///////////////////////////////////////
 		// gitprime version
 		appVersion = app.Command("version", "Display version information.")
 	)
-	log := logger.New()
 
 	a := &pkg.App{
 		Config:  &pkg.AppConfig{},
@@ -118,11 +136,13 @@ func Execute() {
 	// authInfo := httptransport.BearerToken(a.Secrets.AuthToken)
 	authInfo := httptransport.APIKeyAuth("Authorization", "header", "Bearer "+a.Secrets.AuthToken)
 
+	limitHelper := int64(1000000000)
 	switch p {
 
 	case app_Team_List.FullCommand():
 		f := func() (interface{}, error) {
 			params := api_teams.NewTeamsListParams()
+			params.Limit = &limitHelper
 			return client.Teams.TeamsList(params, authInfo)
 		}
 		printPayload(f, log)
@@ -138,6 +158,7 @@ func Execute() {
 	case app_TeamMembership_List.FullCommand():
 		f := func() (interface{}, error) {
 			params := api_teamMembership.NewTeamMembershipListParams()
+			params.Limit = &limitHelper
 			return client.TeamMembership.TeamMembershipList(params, authInfo)
 		}
 		printPayload(f, log)
@@ -153,6 +174,7 @@ func Execute() {
 	case app_User_List.FullCommand():
 		f := func() (interface{}, error) {
 			params := api_users.NewUsersListParams()
+			params.Limit = &limitHelper
 			return client.Users.UsersList(params, authInfo)
 		}
 		printPayload(f, log)
@@ -168,6 +190,7 @@ func Execute() {
 	case app_UserAlias_List.FullCommand():
 		f := func() (interface{}, error) {
 			params := api_userAlias.NewUserAliasListParams()
+			params.Limit = &limitHelper
 			return client.UserAlias.UserAliasList(params, authInfo)
 		}
 		printPayload(f, log)
@@ -179,6 +202,31 @@ func Execute() {
 			return client.UserAlias.UserAliasRead(params, authInfo)
 		}
 		printPayload(f, log)
+
+	case app_Sync_Team.FullCommand():
+		orgTeamList := parseOrgTeamList(*app_Sync_Team__TeamJsonFile)
+		out, _ := json.MarshalIndent(orgTeamList, "", "  ")
+		fmt.Println(string(out))
+
+		userParams := api_users.NewUsersListParams()
+		userParams.Limit = &limitHelper
+		userResp, _ := client.Users.UsersList(userParams, authInfo)
+		userIdMap, _ := parseUserListToUserMaps(userResp.Payload) // userEmailMap
+
+		teamParams := api_teams.NewTeamsListParams()
+		teamParams.Limit = &limitHelper
+		teamResp, _ := client.Teams.TeamsList(teamParams, authInfo)
+		teamIdMap, _ := parseTeamListToTeamMaps(teamResp.Payload) // teamNameMap
+
+		teamMembershipParams := api_teamMembership.NewTeamMembershipListParams()
+		teamMembershipParams.Limit = &limitHelper
+		teamMembershipResp, _ := client.TeamMembership.TeamMembershipList(teamMembershipParams, authInfo)
+		teamMembershipMap := parseTeamMembershipListToTeamMembershipMap(teamMembershipResp.Payload, userIdMap, teamIdMap, *app_Sync_Team__RegexFilterEmailDomain, *app_Sync_Team__TeamDescriptionTag)
+
+		// print out the memberships
+		out, _ = json.MarshalIndent(teamMembershipMap, "", "  ")
+		fmt.Println(string(out))
+
 
 	case appVersion.FullCommand():
 		type Version struct {
