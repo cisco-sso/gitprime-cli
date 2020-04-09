@@ -58,9 +58,13 @@ func Execute() {
 		app_Team_List        = app_Team.Command("list", "List all teams")
 		app_Team_Get         = app_Team.Command("get", "Get a specific team")
 		app_Team_Get__TeamId = app_Team_Get.Arg("team-id", "ID of the team").Required().Int64()
-		app_Team_Create         = app_Team.Command("create", "Create a specific team")
-		app_Team_Create__TeamName = app_Team_Get.Arg("team-name", "Name of the team").Required().String()
-		app_Team_Create__TeamDescription = app_Team_Get.Arg("team-description", "Description of the team").String()
+		app_Team_Create         = app_Team.Command("create", "Create a new team")
+		app_Team_Create__TeamName = app_Team_Create.Arg("team-name", "Name of the team").Required().String()
+		app_Team_Create__TeamDescription = app_Team_Create.Flag("team-description", "Description of the team").Default("").String()
+		app_Team_Create__TeamParentId = app_Team_Create.Flag("team-parent-id", "ID of the parent team").Int64()
+		app_Team_Create__TeamOrgId = app_Team_Create.Flag("team-org-id", "ID of the org team").Default("1").Int64()
+		app_Team_Create__TeamDepth = app_Team_Create.Flag("team-depth", "Depth of the team").Default("inherit").String()
+		app_Team_Create__TeamVisibility = app_Team_Create.Flag("team-visibility", "Visibility of the team").Default("SHOW").String()
 		app_Team_Delete         = app_Team.Command("delete", "Delete a specific team")
 		app_Team_Delete__TeamId = app_Team_Delete.Arg("team-id", "ID of the team").Required().Int64()
 
@@ -152,6 +156,29 @@ func Execute() {
 			params := api_teams.NewTeamsReadParams()
 			params.ID = *app_Team_Get__TeamId
 			return client.Teams.TeamsRead(params, authInfo)
+		}
+		printPayload(f, log)
+
+	case app_Team_Create.FullCommand():
+		f := func() (interface{}, error) {
+			params := api_teams.NewTeamsCreateParams()
+			params.Data = api_teams.TeamsCreateBody{
+				Name: app_Team_Create__TeamName,
+				Parent: *app_Team_Create__TeamParentId,
+				Description: *app_Team_Create__TeamDescription,
+				Org: app_Team_Create__TeamOrgId,
+				Depth: app_Team_Create__TeamDepth,
+				Visibility: app_Team_Create__TeamVisibility,
+			}
+			return client.Teams.TeamsCreate(params, authInfo)
+		}
+		printPayload(f, log)
+
+	case app_Team_Delete.FullCommand():
+		f := func() (interface{}, error) {
+			params := api_teams.NewTeamsDeleteParams()
+			params.ID = *app_Team_Delete__TeamId
+			return client.Teams.TeamsDelete(params, authInfo)
 		}
 		printPayload(f, log)
 
