@@ -99,11 +99,10 @@ func Execute() {
 
 		///////////////////////////////////////
 		// gitprime sync
-		app_Sync                              = app.Command("sync", "Sync commands")
-		app_Sync_Team                         = app_Sync.Command("team", "Team sync command")
-		app_Sync_Team__TeamJsonFile           = app_Sync_Team.Arg("team-json-file", "TeamJson File").Required().ExistingFile()
-		app_Sync_Team__RegexFilterEmailDomain = app_Sync_Team.Flag("regex-filter-email-domain", "Valid users will match this regex [e.g. '.*@domain.com']").Default(".*").Regexp()
-		app_Sync_Team__TeamDescriptionTag     = app_Sync_Team.Flag("team-description-tag", "Tag to be added to Team description to track that a team is managed by this tool").Default("gitprime-cli(donotedit,autogen)").String()
+		app_Sync                          = app.Command("sync", "Sync commands")
+		app_Sync_Team                     = app_Sync.Command("team", "Team sync command")
+		app_Sync_Team__TeamJsonFile       = app_Sync_Team.Arg("team-json-file", "TeamJson File").Required().ExistingFile()
+		app_Sync_Team__TeamDescriptionTag = app_Sync_Team.Flag("team-description-tag", "Tag to be added to Team description to track that a team is managed by this tool").Default("gitprime-cli(donotedit,autogen)").String()
 
 		///////////////////////////////////////
 		// gitprime version
@@ -261,7 +260,7 @@ func Execute() {
 		description_tag := *app_Sync_Team__TeamDescriptionTag
 		orgTeamList, orgTeamNameMap := parseOrgTeamList(*app_Sync_Team__TeamJsonFile)
 
-		// Read the current teams
+		// Read teams
 		teams := getAllTeams(client, authInfo)
 		teamIdMap, teamNameMap := parseTeamListToTeamMaps(teams)
 
@@ -276,19 +275,14 @@ func Execute() {
 				authInfo)
 		}
 
-		// Read the current user
+		// Read users
 		users := getAllUsers(client, authInfo)
 		userIdMap, userEmailMap := parseUserListToUserMaps(users)
 
-		teamMembershipParams := api_teamMembership.NewTeamMembershipListParams()
-		teamMembershipParams.Limit = &limitHelper
-		teamMembershipResp, _ := client.TeamMembership.TeamMembershipList(teamMembershipParams, authInfo)
-		teamMembershipMap := parseTeamMembershipListToTeamMembershipMap(
-			teamMembershipResp.Payload,
-			userIdMap,
-			teamIdMap,
-			*app_Sync_Team__RegexFilterEmailDomain,
-			description_tag)
+		// Read teamMemberships
+		teamMemberships := getAllTeamMemberships(client, authInfo)
+		teamMembershipMap := parseTeamMembershipListToMaps(userIdMap,
+			teamMemberships)
 
 		// Ensure users are associated with teams
 		for _, orgTeam := range orgTeamList {

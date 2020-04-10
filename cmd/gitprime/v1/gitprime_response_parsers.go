@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"regexp"
 	"strings"
 
 	runtime "github.com/go-openapi/runtime"
@@ -24,6 +23,7 @@ type User struct {
 
 func getAllUsers(client *api_client.GitprimeCli, authInfo runtime.ClientAuthInfoWriter) []User {
 	numToRequest := int64(1000)
+	ordering := "id" // must request in order or else not all results returned (True for teamMemberships)
 	userParams := api_users.NewUsersListParams()
 
 	// define the data structure into which to unmarshall
@@ -39,6 +39,7 @@ func getAllUsers(client *api_client.GitprimeCli, authInfo runtime.ClientAuthInfo
 	for offset := int64(0); offset <= t.Count; offset += numToRequest {
 		userParams.Offset = &offset
 		userParams.Limit = &numToRequest
+		userParams.Ordering = &ordering
 		userResp, _ := client.Users.UsersList(userParams, authInfo) // TODO: handle err
 		payload := userResp.Payload
 
@@ -85,6 +86,7 @@ type Team struct {
 
 func getAllTeams(client *api_client.GitprimeCli, authInfo runtime.ClientAuthInfoWriter) []Team {
 	numToRequest := int64(1000)
+	ordering := "id" // must request in order or else not all results returned (True for teamMemberships)
 	teamParams := api_teams.NewTeamsListParams()
 
 	// define the data structure into which to unmarshall
@@ -100,6 +102,7 @@ func getAllTeams(client *api_client.GitprimeCli, authInfo runtime.ClientAuthInfo
 	for offset := int64(0); offset <= t.Count; offset += numToRequest {
 		teamParams.Offset = &offset
 		teamParams.Limit = &numToRequest
+		teamParams.Ordering = &ordering
 		teamResp, _ := client.Teams.TeamsList(teamParams, authInfo) // TODO: handle err
 		payload := teamResp.Payload
 
@@ -136,9 +139,54 @@ func parseTeamListToTeamMaps(teamList []Team) (TeamIdMap, TeamNameMap) {
 	return teamIdMap, teamNameMap
 }
 
-// map[user.email][team.name]
-type TeamMembershipMap map[string]map[string]TeamMembershipItem
+type TeamMembership struct {
+	Id     int64 `json:"id"`
+	UserId int64 `json:"apex_user_id"`
+	Team   Team
+}
 
+func getAllTeamMemberships(client *api_client.GitprimeCli, authInfo runtime.ClientAuthInfoWriter) []TeamMembership {
+	numToRequest := int64(1000)
+	ordering := "id" // must request in order or else not all results returned (True for teamMemberships)
+	teamMembershipParams := api_teamMembership.NewTeamMembershipListParams()
+
+	// define the data structure into which to unmarshall
+	type tmpStruct struct {
+		Count    int64  `json:"count"`
+		Next     string `json:"next"`
+		Previous string `json:"previous"`
+		Results  []TeamMembership
+	}
+	t := tmpStruct{}
+
+	teamMemberships := []TeamMembership{}
+	for offset := int64(0); offset <= t.Count; offset += numToRequest {
+		teamMembershipParams.Offset = &offset
+		teamMembershipParams.Limit = &numToRequest
+		teamMembershipParams.Ordering = &ordering
+		teamMembershipResp, _ := client.TeamMembership.TeamMembershipList(teamMembershipParams, authInfo) // TODO: handle err
+		payload := teamMembershipResp.Payload
+
+		// Re-Marshal into our own data structure
+		////  Marshall and turn the payload back into a json string
+		jsonbytes, err := json.MarshalIndent(payload, "", "  ")
+		if err != nil {
+			log.WithFields(logrus.Fields{"err": err, "payload": payload}).Errorf("failed")
+		}
+		////  Unmarshall into our own data structure
+		err = json.Unmarshal(jsonbytes, &t)
+		if err != nil {
+			log.WithFields(logrus.Fields{"err": err, "payload": payload}).Errorf("failed")
+		}
+
+		for _, ele := range t.Results {
+			teamMemberships = append(teamMemberships, ele)
+		}
+	}
+	return teamMemberships
+}
+
+type TeamMembershipMap map[string]map[string]TeamMembershipItem // map[user.email][team.name]
 type TeamMembershipItem struct {
 	User           User
 	UserEmail      string
@@ -147,57 +195,28 @@ type TeamMembershipItem struct {
 	TeamMembership TeamMembership
 }
 
-type TeamMembership struct {
-	Id     int64 `json:"id"`
-	UserId int64 `json:"apex_user_id"`
-	Team   Team
-}
-
-func parseTeamMembershipListToTeamMembershipMap(payload interface{}, userIdMap UserIdMap, teamIdMap TeamIdMap, emailFilterRegexp *regexp.Regexp, teamDescriptionTag string) TeamMembershipMap {
-	// we have to re-marshal the payload into our own data structure
-
-	// turn the payload back into a json string
-	jsonbytes, err := json.MarshalIndent(payload, "", "  ")
-	if err != nil {
-		log.WithFields(logrus.Fields{"err": err, "payload": payload}).Errorf("failed")
-	}
-
-	// define the data structure into which to unmarshall
-	type tmpStruct struct {
-		Count    int    `json:"count"`
-		Next     string `json:"next"`
-		Previous string `json:"previous"`
-		Results  []TeamMembership
-	}
-
-	// unmarshall into the data structure
-	t := tmpStruct{}
-	err = json.Unmarshal(jsonbytes, &t)
-	if err != nil {
-		fmt.Println(err)
-	}
-
+func parseTeamMembershipListToMaps(userIdMap UserIdMap, teamMembershipList []TeamMembership) TeamMembershipMap {
 	// load into our own data struture
 	teamMembershipMap := TeamMembershipMap{}
-	for _, teamMembership := range t.Results {
+	for _, teamMembership := range teamMembershipList {
 		user := userIdMap[teamMembership.UserId]
 		team := teamMembership.Team
 
-		if !emailFilterRegexp.MatchString(user.Email) {
-			fmt.Println("skipping add of user [%v]", user.Email)
-			continue
-		}
-
-		if _, ok := teamMembershipMap[user.Email]; !ok {
+		if _, present := teamMembershipMap[user.Email]; !present {
 			teamMembershipMap[user.Email] = make(map[string]TeamMembershipItem)
 		}
 
-		teamMembershipMap[user.Email][team.Name] = TeamMembershipItem{
+		tmi := TeamMembershipItem{
 			UserEmail:      user.Email,
 			TeamName:       team.Name,
 			User:           user,
 			Team:           team,
 			TeamMembership: teamMembership,
+		}
+		if _, present := teamMembershipMap[user.Email][team.Name]; !present {
+			teamMembershipMap[user.Email][team.Name] = tmi
+		} else {
+			fmt.Println("ERROR: membership already present", user.Email, team.Name)
 		}
 	}
 	return teamMembershipMap
