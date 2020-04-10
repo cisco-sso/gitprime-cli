@@ -13,10 +13,8 @@ import (
 	api_client "github.com/cisco-sso/gitprime-cli/client"
 	api_teamMembership "github.com/cisco-sso/gitprime-cli/client/team_membership"
 	api_teams "github.com/cisco-sso/gitprime-cli/client/teams"
+	api_users "github.com/cisco-sso/gitprime-cli/client/users"
 )
-
-type UserIdMap map[int64]User
-type UserEmailMap map[string]User
 
 type User struct {
 	Id    int64  `json:"id"`
@@ -24,34 +22,53 @@ type User struct {
 	Email string `json:"email"`
 }
 
-func parseUserListToUserMaps(payload interface{}) (UserIdMap, UserEmailMap) {
-	// we have to re-marshal the payload into our own data structure
-
-	// turn the payload back into a json string
-	jsonbytes, err := json.MarshalIndent(payload, "", "  ")
-	if err != nil {
-		log.WithFields(logrus.Fields{"err": err, "payload": payload}).Errorf("failed")
-	}
+func getAllUsers(client *api_client.GitprimeCli, authInfo runtime.ClientAuthInfoWriter) []User {
+	numToRequest := int64(1000)
+	userParams := api_users.NewUsersListParams()
 
 	// define the data structure into which to unmarshall
 	type tmpStruct struct {
-		Count    int    `json:"count"`
+		Count    int64  `json:"count"`
 		Next     string `json:"next"`
 		Previous string `json:"previous"`
 		Results  []User
 	}
-
-	// unmarshall into the data structure
 	t := tmpStruct{}
-	err = json.Unmarshal(jsonbytes, &t)
-	if err != nil {
-		fmt.Println(err)
-	}
 
-	// load into our own data struture
+	users := []User{}
+	for offset := int64(0); offset <= t.Count; offset += numToRequest {
+		userParams.Offset = &offset
+		userParams.Limit = &numToRequest
+		userResp, _ := client.Users.UsersList(userParams, authInfo) // TODO: handle err
+		payload := userResp.Payload
+
+		// Re-Marshal into our own data structure
+		////  Marshall and turn the payload back into a json string
+		jsonbytes, err := json.MarshalIndent(payload, "", "  ")
+		if err != nil {
+			log.WithFields(logrus.Fields{"err": err, "payload": payload}).Errorf("failed")
+		}
+		////  Unmarshall into our own data structure
+		err = json.Unmarshal(jsonbytes, &t)
+		if err != nil {
+			log.WithFields(logrus.Fields{"err": err, "payload": payload}).Errorf("failed")
+		}
+
+		for _, ele := range t.Results {
+			users = append(users, ele)
+		}
+	}
+	return users
+}
+
+type UserIdMap map[int64]User
+type UserEmailMap map[string]User
+
+func parseUserListToUserMaps(userList []User) (UserIdMap, UserEmailMap) {
+	// load into our own data strutures
 	userIdMap := UserIdMap{}
 	userEmailMap := UserEmailMap{}
-	for _, user := range t.Results {
+	for _, user := range userList {
 		userIdMap[user.Id] = user
 		userEmailMap[user.Email] = user
 	}

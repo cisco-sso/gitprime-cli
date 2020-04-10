@@ -276,10 +276,9 @@ func Execute() {
 				authInfo)
 		}
 
-		userParams := api_users.NewUsersListParams()
-		userParams.Limit = &limitHelper
-		userResp, _ := client.Users.UsersList(userParams, authInfo)
-		userIdMap, userEmailMap := parseUserListToUserMaps(userResp.Payload)
+		// Read the current user
+		users := getAllUsers(client, authInfo)
+		userIdMap, userEmailMap := parseUserListToUserMaps(users)
 
 		teamMembershipParams := api_teamMembership.NewTeamMembershipListParams()
 		teamMembershipParams.Limit = &limitHelper
