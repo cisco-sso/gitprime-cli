@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/cisco-sso/gitprime-cli/info"
@@ -143,11 +144,9 @@ func Execute() {
 	// create the API client
 	transport := httptransport.New(a.Config.ServerHost, api_client.DefaultBasePath, api_client.DefaultSchemes)
 	client := api_client.New(transport, strfmt.Default)
-	// authInfo := httptransport.APIKeyAuth("X-Cisco-Meraki-API-Key", "header", a.Secrets.AuthToken)
-	// authInfo := httptransport.BearerToken(a.Secrets.AuthToken)
 	authInfo := httptransport.APIKeyAuth("Authorization", "header", "Bearer "+a.Secrets.AuthToken)
 
-	limitHelper := int64(1000000000)
+	limitHelper := int64(1000000)
 	switch p {
 
 	case app_Team_List.FullCommand():
@@ -156,7 +155,7 @@ func Execute() {
 			params.Limit = &limitHelper
 			return client.Teams.TeamsList(params, authInfo)
 		}
-		printPayload(f, log)
+		requestAndPrint(f, log)
 
 	case app_Team_Get.FullCommand():
 		f := func() (interface{}, error) {
@@ -164,7 +163,7 @@ func Execute() {
 			params.ID = *app_Team_Get__TeamId
 			return client.Teams.TeamsRead(params, authInfo)
 		}
-		printPayload(f, log)
+		requestAndPrint(f, log)
 
 	case app_Team_Create.FullCommand():
 		f := func() (interface{}, error) {
@@ -179,7 +178,7 @@ func Execute() {
 			}
 			return client.Teams.TeamsCreate(params, authInfo)
 		}
-		printPayload(f, log)
+		requestAndPrint(f, log)
 
 	case app_Team_Delete.FullCommand():
 		f := func() (interface{}, error) {
@@ -187,7 +186,7 @@ func Execute() {
 			params.ID = *app_Team_Delete__TeamId
 			return client.Teams.TeamsDelete(params, authInfo)
 		}
-		printPayload(f, log)
+		requestAndPrint(f, log)
 
 	case app_TeamMembership_List.FullCommand():
 		f := func() (interface{}, error) {
@@ -195,7 +194,7 @@ func Execute() {
 			params.Limit = &limitHelper
 			return client.TeamMembership.TeamMembershipList(params, authInfo)
 		}
-		printPayload(f, log)
+		requestAndPrint(f, log)
 
 	case app_TeamMembership_Get.FullCommand():
 		f := func() (interface{}, error) {
@@ -203,7 +202,7 @@ func Execute() {
 			params.ID = *app_TeamMembership_Get__TeamMembershipId
 			return client.TeamMembership.TeamMembershipRead(params, authInfo)
 		}
-		printPayload(f, log)
+		requestAndPrint(f, log)
 
 	case app_TeamMembership_Create.FullCommand():
 		f := func() (interface{}, error) {
@@ -216,7 +215,7 @@ func Execute() {
 			}
 			return client.TeamMembership.TeamMembershipCreate(params, authInfo)
 		}
-		printPayload(f, log)
+		requestAndPrint(f, log)
 
 	case app_TeamMembership_Delete.FullCommand():
 		f := func() (interface{}, error) {
@@ -224,7 +223,7 @@ func Execute() {
 			params.ID = *app_TeamMembership_Delete__TeamMembershipId
 			return client.TeamMembership.TeamMembershipDelete(params, authInfo)
 		}
-		printPayload(f, log)
+		requestAndPrint(f, log)
 
 	case app_User_List.FullCommand():
 		f := func() (interface{}, error) {
@@ -232,7 +231,7 @@ func Execute() {
 			params.Limit = &limitHelper
 			return client.Users.UsersList(params, authInfo)
 		}
-		printPayload(f, log)
+		requestAndPrint(f, log)
 
 	case app_User_Get.FullCommand():
 		f := func() (interface{}, error) {
@@ -240,7 +239,7 @@ func Execute() {
 			params.ID = *app_User_Get__UserId
 			return client.Users.UsersRead(params, authInfo)
 		}
-		printPayload(f, log)
+		requestAndPrint(f, log)
 
 	case app_UserAlias_List.FullCommand():
 		f := func() (interface{}, error) {
@@ -248,7 +247,7 @@ func Execute() {
 			params.Limit = &limitHelper
 			return client.UserAlias.UserAliasList(params, authInfo)
 		}
-		printPayload(f, log)
+		requestAndPrint(f, log)
 
 	case app_UserAlias_Get.FullCommand():
 		f := func() (interface{}, error) {
@@ -256,31 +255,48 @@ func Execute() {
 			params.ID = *app_UserAlias_Get__UserAliasId
 			return client.UserAlias.UserAliasRead(params, authInfo)
 		}
-		printPayload(f, log)
+		requestAndPrint(f, log)
 
 	case app_Sync_Team.FullCommand():
-		orgTeamList := parseOrgTeamList(*app_Sync_Team__TeamJsonFile)
-		out, _ := json.MarshalIndent(orgTeamList, "", "  ")
-		fmt.Println(string(out))
+		description_tag := *app_Sync_Team__TeamDescriptionTag
+		orgTeamList, orgTeamNameMap := parseOrgTeamList(*app_Sync_Team__TeamJsonFile)
+
+		// Read the current teams
+		teamParams := api_teams.NewTeamsListParams()
+		teamParams.Limit = &limitHelper
+		teamResp, _ := client.Teams.TeamsList(teamParams, authInfo)
+		teamIdMap, teamNameMap := parseTeamListToTeamMaps(teamResp.Payload)
+
+		// Ensure teams
+		for orgTeamName := range orgTeamNameMap {
+			segments := strings.Split(orgTeamName, ".")
+			recurseEnsureTeamExists(segments,
+				teamIdMap,
+				teamNameMap,
+				description_tag,
+				client,
+				authInfo)
+		}
 
 		userParams := api_users.NewUsersListParams()
 		userParams.Limit = &limitHelper
 		userResp, _ := client.Users.UsersList(userParams, authInfo)
-		userIdMap, _ := parseUserListToUserMaps(userResp.Payload) // userEmailMap
-
-		teamParams := api_teams.NewTeamsListParams()
-		teamParams.Limit = &limitHelper
-		teamResp, _ := client.Teams.TeamsList(teamParams, authInfo)
-		teamIdMap, _ := parseTeamListToTeamMaps(teamResp.Payload) // teamNameMap
+		userIdMap, userEmailMap := parseUserListToUserMaps(userResp.Payload)
 
 		teamMembershipParams := api_teamMembership.NewTeamMembershipListParams()
 		teamMembershipParams.Limit = &limitHelper
 		teamMembershipResp, _ := client.TeamMembership.TeamMembershipList(teamMembershipParams, authInfo)
-		teamMembershipMap := parseTeamMembershipListToTeamMembershipMap(teamMembershipResp.Payload, userIdMap, teamIdMap, *app_Sync_Team__RegexFilterEmailDomain, *app_Sync_Team__TeamDescriptionTag)
+		teamMembershipMap := parseTeamMembershipListToTeamMembershipMap(
+			teamMembershipResp.Payload,
+			userIdMap,
+			teamIdMap,
+			*app_Sync_Team__RegexFilterEmailDomain,
+			description_tag)
 
-		// print out the memberships
-		out, _ = json.MarshalIndent(teamMembershipMap, "", "  ")
-		fmt.Println(string(out))
+		// Ensure users are associated with teams
+		for _, orgTeam := range orgTeamList {
+			iterateEnsureUsersInTeam(orgTeam, userEmailMap, teamNameMap, teamMembershipMap, client, authInfo)
+		}
 
 	case appVersion.FullCommand():
 		type Version struct {
@@ -312,7 +328,7 @@ func Execute() {
 	}
 }
 
-func printPayload(f func() (interface{}, error), log *logger.Logger) {
+func requestAndPrint(f func() (interface{}, error), log *logger.Logger) {
 	log.WithFields(logrus.Fields{"args": os.Args}).Tracef("called")
 
 	type PayloadInterface interface {
@@ -356,4 +372,9 @@ func printPayload(f func() (interface{}, error), log *logger.Logger) {
 		log.WithFields(logrus.Fields{"err": err, "str": str}).Errorf("failed")
 	}
 	fmt.Println(string(json))
+}
+
+func printAsJson(o interface{}) {
+	out, _ := json.MarshalIndent(o, "", "  ")
+	fmt.Println(string(out))
 }

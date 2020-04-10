@@ -5,15 +5,21 @@ import (
 	"fmt"
 	"io/ioutil"
 	"regexp"
+	"strings"
 
+	runtime "github.com/go-openapi/runtime"
 	"github.com/sirupsen/logrus"
+
+	api_client "github.com/cisco-sso/gitprime-cli/client"
+	api_teamMembership "github.com/cisco-sso/gitprime-cli/client/team_membership"
+	api_teams "github.com/cisco-sso/gitprime-cli/client/teams"
 )
 
-type UserIdMap map[int]User
+type UserIdMap map[int64]User
 type UserEmailMap map[string]User
 
 type User struct {
-	Id    int    `json:"id"`
+	Id    int64  `json:"id"`
 	Name  string `json:"name"`
 	Email string `json:"email"`
 }
@@ -35,7 +41,7 @@ func parseUserListToUserMaps(payload interface{}) (UserIdMap, UserEmailMap) {
 		Results  []User
 	}
 
-	// unmarshall into the data strcture
+	// unmarshall into the data structure
 	t := tmpStruct{}
 	err = json.Unmarshal(jsonbytes, &t)
 	if err != nil {
@@ -52,12 +58,14 @@ func parseUserListToUserMaps(payload interface{}) (UserIdMap, UserEmailMap) {
 	return userIdMap, userEmailMap
 }
 
-type TeamIdMap map[int]Team
+type TeamIdMap map[int64]Team
 type TeamNameMap map[string]Team
 
 type Team struct {
-	Id          int    `json:"id"`
-	Name        string `json:"name"`
+	Id       int64  `json:"id"`
+	Name     string `json:"name"`
+	ParentId int64  `json:"parent"`
+
 	Description string `json:"description"`
 }
 
@@ -78,7 +86,7 @@ func parseTeamListToTeamMaps(payload interface{}) (TeamIdMap, TeamNameMap) {
 		Results  []Team
 	}
 
-	// unmarshall into the data strcture
+	// unmarshall into the data structure
 	t := tmpStruct{}
 	err = json.Unmarshal(jsonbytes, &t)
 	if err != nil {
@@ -107,8 +115,8 @@ type TeamMembershipItem struct {
 }
 
 type TeamMembership struct {
-	Id     int `json:"id"`
-	UserId int `json:"apex_user_id"`
+	Id     int64 `json:"id"`
+	UserId int64 `json:"apex_user_id"`
 	Team   Team
 }
 
@@ -129,7 +137,7 @@ func parseTeamMembershipListToTeamMembershipMap(payload interface{}, userIdMap U
 		Results  []TeamMembership
 	}
 
-	// unmarshall into the data strcture
+	// unmarshall into the data structure
 	t := tmpStruct{}
 	err = json.Unmarshal(jsonbytes, &t)
 	if err != nil {
@@ -152,31 +160,177 @@ func parseTeamMembershipListToTeamMembershipMap(payload interface{}, userIdMap U
 		}
 
 		teamMembershipMap[user.Email][team.Name] = TeamMembershipItem{
-			User:           user,
 			UserEmail:      user.Email,
-			Team:           team,
 			TeamName:       team.Name,
+			User:           user,
+			Team:           team,
 			TeamMembership: teamMembership,
 		}
 	}
 	return teamMembershipMap
 }
 
-type OrgTeamList []struct {
+type OrgTeamList []OrgTeam
+type OrgTeamNameMap map[string]OrgTeam
+
+type OrgTeam struct {
 	Name    string   `json:"name"`
 	Members []string `json:"members"`
 }
 
-func parseOrgTeamList(payloadFile string) OrgTeamList {
+func parseOrgTeamList(payloadFile string) (OrgTeamList, OrgTeamNameMap) {
 	// we have to re-marshal the payload into our own data structure
 	payload, _ := ioutil.ReadFile(payloadFile)
 
-	// unmarshall into the data strcture
-	t := OrgTeamList{}
-	err := json.Unmarshal([]byte(payload), &t)
+	// unmarshall into the data structure
+	orgTeamList := OrgTeamList{}
+	err := json.Unmarshal([]byte(payload), &orgTeamList)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	return t
+	orgTeamNameMap := OrgTeamNameMap{}
+	for _, e := range orgTeamList {
+		orgTeamNameMap[e.Name] = e
+	}
+
+	return orgTeamList, orgTeamNameMap
+}
+
+func recurseEnsureTeamExists(teamNames []string, teamIdMap TeamIdMap,
+	teamNameMap TeamNameMap, teamDescriptionTag string, client *api_client.GitprimeCli, authInfo runtime.ClientAuthInfoWriter) *Team {
+
+	if len(teamNames) == 0 {
+		return nil
+	} else {
+		currentTeamName := teamNames[len(teamNames)-1]
+		ancestorTeamNames := teamNames[:len(teamNames)-1]
+		parentTeamObj := recurseEnsureTeamExists(ancestorTeamNames, teamIdMap, teamNameMap, teamDescriptionTag, client, authInfo)
+
+		if _, present := teamNameMap[currentTeamName]; !present {
+			var parentTeamId int64
+			var parentTeamName string
+			if parentTeamObj != nil {
+				parentTeamId = parentTeamObj.Id
+				parentTeamName = parentTeamObj.Name
+			}
+			fmt.Printf("Creating New Team %s with Parent Team Name %s Id %d\n", currentTeamName, parentTeamName, parentTeamId)
+
+			params := api_teams.NewTeamsCreateParams()
+			org_helper := int64(1)
+			depth_helper := "inherit"
+			show_helper := "SHOW"
+			params.Data = api_teams.TeamsCreateBody{
+				Name:        &currentTeamName,
+				Parent:      parentTeamId,
+				Description: teamDescriptionTag,
+				Org:         &org_helper,
+				Depth:       &depth_helper,
+				Visibility:  &show_helper,
+			}
+			resp, err := client.Teams.TeamsCreate(params, authInfo)
+			if err != nil {
+				failMsg := "Operation Failed: To debug, run with environment variable DEBUG=1 set"
+				log.WithFields(logrus.Fields{"err": err}).Errorf(failMsg)
+			}
+
+			// we have to re-marshal the payload into our own data structure
+
+			// turn the payload back into a json string
+			payload := resp.Payload
+			jsonbytes, err := json.MarshalIndent(payload, "", "  ")
+			if err != nil {
+				log.WithFields(logrus.Fields{"err": err, "payload": payload}).Errorf("failed")
+			}
+
+			// unmarshall into the data structure
+			t := Team{}
+			err = json.Unmarshal(jsonbytes, &t)
+			if err != nil {
+				fmt.Println(err)
+			}
+			teamIdMap[t.Id] = t
+			teamNameMap[t.Name] = t
+
+		} else {
+			fmt.Printf("Team %s already exists\n", currentTeamName)
+		}
+		t := teamNameMap[currentTeamName]
+		return &t
+	}
+}
+
+func iterateEnsureUsersInTeam(orgTeam OrgTeam, userEmailMap UserEmailMap, teamNameMap TeamNameMap,
+	teamMembershipMap TeamMembershipMap, client *api_client.GitprimeCli, authInfo runtime.ClientAuthInfoWriter) {
+
+	// member is an email address
+	for _, member := range orgTeam.Members {
+		userObj, present := userEmailMap[member]
+		if !present {
+			// This member has never been seen in GitPrime before.
+			//   They have not checked in code
+			fmt.Printf("Warning: user %s not found in GitPrime\n", member)
+			continue
+		} // The user is indeed in GitPrime
+
+		segments := strings.Split(orgTeam.Name, ".")
+		orgTeamName := segments[len(segments)-1]
+		teamObj, present := teamNameMap[orgTeamName]
+		if !present {
+			// This team currently does not exist in GitPrime
+			//   They have not checked in code
+			fmt.Printf("Warning: team %s does not exist\n", orgTeamName)
+			continue
+		} // The team is indeed in GitPrime
+
+		if _, present := teamMembershipMap[member]; !present {
+			teamMembershipMap[member] = make(map[string]TeamMembershipItem)
+		}
+
+		if _, present := teamMembershipMap[member][orgTeamName]; !present {
+			fmt.Printf("Adding user %s to team %s\n", member, orgTeamName)
+
+			// make the call to create the teamMembership user->team
+			params := api_teamMembership.NewTeamMembershipCreateParams()
+			depth_helper := "inherit"
+			params.Data = api_teamMembership.TeamMembershipCreateBody{
+				ApexUserID:     &userObj.Id,
+				TeamID:         &teamObj.Id,
+				Depth:          &depth_helper,
+				MembershipType: "contributor",
+			}
+
+			resp, err := client.TeamMembership.TeamMembershipCreate(params, authInfo)
+			if err != nil {
+				failMsg := "Operation Failed: To debug, run with environment variable DEBUG=1 set"
+				log.WithFields(logrus.Fields{"err": err}).Errorf(failMsg)
+			}
+
+			// we have to re-marshal the payload into our own data structure
+
+			// turn the payload back into a json string
+			payload := resp.Payload
+			jsonbytes, err := json.MarshalIndent(payload, "", "  ")
+			if err != nil {
+				log.WithFields(logrus.Fields{"err": err, "payload": payload}).Errorf("failed")
+			}
+
+			// unmarshall into the data structure
+			t := TeamMembership{}
+			err = json.Unmarshal(jsonbytes, &t)
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			teamMembershipMap[member][orgTeamName] = TeamMembershipItem{
+				User:           userObj,
+				UserEmail:      member,
+				Team:           teamObj,
+				TeamName:       teamObj.Name,
+				TeamMembership: t,
+			}
+		} else {
+			fmt.Printf("Team Membership Already Exists: User %s to team %s\n", member, orgTeamName)
+		}
+	}
 }
