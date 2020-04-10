@@ -58,9 +58,6 @@ func parseUserListToUserMaps(payload interface{}) (UserIdMap, UserEmailMap) {
 	return userIdMap, userEmailMap
 }
 
-type TeamIdMap map[int64]Team
-type TeamNameMap map[string]Team
-
 type Team struct {
 	Id       int64  `json:"id"`
 	Name     string `json:"name"`
@@ -69,34 +66,53 @@ type Team struct {
 	Description string `json:"description"`
 }
 
-func parseTeamListToTeamMaps(payload interface{}) (TeamIdMap, TeamNameMap) {
-	// we have to re-marshal the payload into our own data structure
-
-	// turn the payload back into a json string
-	jsonbytes, err := json.MarshalIndent(payload, "", "  ")
-	if err != nil {
-		log.WithFields(logrus.Fields{"err": err, "payload": payload}).Errorf("failed")
-	}
+func getAllTeams(client *api_client.GitprimeCli, authInfo runtime.ClientAuthInfoWriter) []Team {
+	numToRequest := int64(1000)
+	teamParams := api_teams.NewTeamsListParams()
 
 	// define the data structure into which to unmarshall
 	type tmpStruct struct {
-		Count    int    `json:"count"`
+		Count    int64  `json:"count"`
 		Next     string `json:"next"`
 		Previous string `json:"previous"`
 		Results  []Team
 	}
-
-	// unmarshall into the data structure
 	t := tmpStruct{}
-	err = json.Unmarshal(jsonbytes, &t)
-	if err != nil {
-		fmt.Println(err)
-	}
 
-	// load into our own data struture
+	teams := []Team{}
+	for offset := int64(0); offset <= t.Count; offset += numToRequest {
+		teamParams.Offset = &offset
+		teamParams.Limit = &numToRequest
+		teamResp, _ := client.Teams.TeamsList(teamParams, authInfo) // TODO: handle err
+		payload := teamResp.Payload
+
+		// Re-Marshal into our own data structure
+		////  Marshall and turn the payload back into a json string
+		jsonbytes, err := json.MarshalIndent(payload, "", "  ")
+		if err != nil {
+			log.WithFields(logrus.Fields{"err": err, "payload": payload}).Errorf("failed")
+		}
+		////  Unmarshall into our own data structure
+		err = json.Unmarshal(jsonbytes, &t)
+		if err != nil {
+			log.WithFields(logrus.Fields{"err": err, "payload": payload}).Errorf("failed")
+		}
+
+		for _, ele := range t.Results {
+			teams = append(teams, ele)
+		}
+	}
+	return teams
+}
+
+type TeamIdMap map[int64]Team
+type TeamNameMap map[string]Team
+
+func parseTeamListToTeamMaps(teamList []Team) (TeamIdMap, TeamNameMap) {
+	// load into our own data strutures
 	teamIdMap := TeamIdMap{}
 	teamNameMap := TeamNameMap{}
-	for _, team := range t.Results {
+	for _, team := range teamList {
 		teamIdMap[team.Id] = team
 		teamNameMap[team.Name] = team
 	}

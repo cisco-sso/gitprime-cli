@@ -262,10 +262,8 @@ func Execute() {
 		orgTeamList, orgTeamNameMap := parseOrgTeamList(*app_Sync_Team__TeamJsonFile)
 
 		// Read the current teams
-		teamParams := api_teams.NewTeamsListParams()
-		teamParams.Limit = &limitHelper
-		teamResp, _ := client.Teams.TeamsList(teamParams, authInfo)
-		teamIdMap, teamNameMap := parseTeamListToTeamMaps(teamResp.Payload)
+		teams := getAllTeams(client, authInfo)
+		teamIdMap, teamNameMap := parseTeamListToTeamMaps(teams)
 
 		// Ensure teams
 		for orgTeamName := range orgTeamNameMap {
