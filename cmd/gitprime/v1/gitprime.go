@@ -101,7 +101,7 @@ func Execute() {
 		// gitprime sync
 		app_Sync                          = app.Command("sync", "Sync commands")
 		app_Sync_Team                     = app_Sync.Command("team", "Team sync command")
-		app_Sync_Team__TeamJsonFile       = app_Sync_Team.Arg("team-json-file", "TeamJson File").Required().ExistingFile()
+		app_Sync_Team__TeamDefinitionFile = app_Sync_Team.Arg("team-definition-file", "YAML or JSON file which lists mappings of teams to members").Required().ExistingFile()
 		app_Sync_Team__TeamDescriptionTag = app_Sync_Team.Flag("team-description-tag", "Tag to be added to Team description to track that a team is managed by this tool").Default("gitprime-cli(donotedit,autogen)").String()
 
 		///////////////////////////////////////
@@ -258,16 +258,17 @@ func Execute() {
 
 	case app_Sync_Team.FullCommand():
 		description_tag := *app_Sync_Team__TeamDescriptionTag
-		orgTeamList, orgTeamNameMap := parseOrgTeamList(*app_Sync_Team__TeamJsonFile)
+		teamDefinitionList, teamDefinitionNameMap := parseTeamDefinitionFile(*app_Sync_Team__TeamDefinitionFile)
 
 		// Read teams
-		teams := getAllTeams(client, authInfo)
+		teams := getAllTeamList(client, authInfo)
 		teamIdMap, teamNameMap := parseTeamListToTeamMaps(teams)
 
 		// Ensure teams
-		for orgTeamName := range orgTeamNameMap {
-			segments := strings.Split(orgTeamName, ".")
-			recurseEnsureTeamExists(segments,
+		for teamDefinitionName := range teamDefinitionNameMap {
+			segments := strings.Split(teamDefinitionName, ".")
+			recurseEnsureTeamExists(
+				segments,
 				teamIdMap,
 				teamNameMap,
 				description_tag,
@@ -276,17 +277,16 @@ func Execute() {
 		}
 
 		// Read users
-		users := getAllUsers(client, authInfo)
+		users := getAllUserList(client, authInfo)
 		userIdMap, userEmailMap := parseUserListToUserMaps(users)
 
-		// Read teamMemberships
-		teamMemberships := getAllTeamMemberships(client, authInfo)
-		teamMembershipMap := parseTeamMembershipListToMaps(userIdMap,
-			teamMemberships)
+		// Read teamMembers
+		teamMemberships := getAllTeamMembershipList(client, authInfo)
+		teamMembershipsMap := parseTeamMembershipListToMaps(userIdMap, teamMemberships)
 
 		// Ensure users are associated with teams
-		for _, orgTeam := range orgTeamList {
-			iterateEnsureUsersInTeam(orgTeam, userEmailMap, teamNameMap, teamMembershipMap, client, authInfo)
+		for _, teamMembers := range teamDefinitionList {
+			iterateEnsureUsersInTeam(teamMembers, userEmailMap, teamNameMap, teamMembershipsMap, client, authInfo)
 		}
 
 	case appVersion.FullCommand():
@@ -346,8 +346,8 @@ func requestAndPrint(f func() (interface{}, error), log *logger.Logger) {
 		//    It errors out in the ioutil.ReadAll statement above.
 		//    TODO: Fix this by tuning the swagger file.
 		//    https://github.com/go-openapi/runtime/issues/121
-		fmt.Println(string(body))
-		os.Exit(1)
+		log.WithFields(logrus.Fields{"body": string(body)}).Fatalf(
+			"Code or API error: Cannot read HTTP response body")
 	}
 
 	var str interface{}

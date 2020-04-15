@@ -3,6 +3,7 @@
 .cache/
 bin/
 dist/
+TAGS
 
 cp.out
 coverage.html
