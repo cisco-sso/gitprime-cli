@@ -1,0 +1,965 @@
+--- swagger.orig.json	2020-04-15 20:33:36.000000000 +0000
++++ swagger.patched.json	2020-04-15 23:18:07.000000000 +0000
+@@ -4,6 +4,21 @@
+     "title": "Customer API",
+     "version": ""
+   },
++  "host": "flow.pluralsight.com",
++  "schemes": [
++    "https"
++  ],
++  "security": [
++    {
++      "api_key": []
++    }
++  ],
++  "consumes": [
++    "application/json"
++  ],
++  "produces": [
++    "application/json"
++  ],
+   "paths": {
+     "/v3/customer/core/available_repos/": {
+       "get": {
+@@ -220,7 +235,10 @@
+         "operationId": "available_repos_list",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -244,7 +262,10 @@
+         "operationId": "available_repos_read",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -464,7 +485,10 @@
+         "operationId": "available_ticket_projects_list",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -488,7 +512,10 @@
+         "operationId": "available_ticket_projects_read",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -1611,7 +1638,10 @@
+         "operationId": "commits_list",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -1635,7 +1665,10 @@
+         "operationId": "commits_read",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -1694,7 +1727,10 @@
+         "operationId": "grants_list",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -1718,7 +1754,10 @@
+         "operationId": "grants_read",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -1791,7 +1830,10 @@
+         "operationId": "group_settings_list",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -1815,7 +1857,10 @@
+         "operationId": "group_settings_read",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -1993,7 +2038,10 @@
+         "operationId": "integrations_list",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -2077,7 +2125,10 @@
+         ],
+         "responses": {
+           "201": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -2142,7 +2193,10 @@
+         ],
+         "responses": {
+           "201": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -2166,7 +2220,10 @@
+         "operationId": "integrations_read",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       },
+@@ -2221,7 +2278,10 @@
+         ],
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       },
+@@ -2243,7 +2303,10 @@
+         "operationId": "integrations_delete",
+         "responses": {
+           "204": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -2267,7 +2330,10 @@
+         "operationId": "integrations_connection_status",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -2334,7 +2400,10 @@
+         ],
+         "responses": {
+           "201": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -2428,7 +2497,10 @@
+         "operationId": "org_membership_list",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -2452,7 +2524,10 @@
+         "operationId": "org_membership_read",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       },
+@@ -2518,7 +2593,10 @@
+         ],
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -2654,7 +2732,10 @@
+         "operationId": "pull_request_comments_list",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -2678,7 +2759,10 @@
+         "operationId": "pull_request_comments_read",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -2800,7 +2884,10 @@
+         "operationId": "pull_request_events_list",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -2824,7 +2911,10 @@
+         "operationId": "pull_request_events_read",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -3016,7 +3106,10 @@
+         "operationId": "pull_request_projects_list",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -3040,7 +3133,10 @@
+         "operationId": "pull_request_projects_read",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -3512,7 +3608,10 @@
+         "operationId": "pull_requests_list",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -3536,7 +3635,10 @@
+         "operationId": "pull_requests_read",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -3903,7 +4005,10 @@
+         "operationId": "repos_list",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -3942,7 +4047,10 @@
+         ],
+         "responses": {
+           "201": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -3966,7 +4074,10 @@
+         "operationId": "repos_read",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       },
+@@ -4090,7 +4201,10 @@
+         ],
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       },
+@@ -4112,7 +4226,10 @@
+         "operationId": "repos_delete",
+         "responses": {
+           "204": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -4120,7 +4237,15 @@
+     "/v3/customer/core/repos/{project}/update_repo/": {
+       "post": {
+         "description": "Queue a repo to update by id value",
+-        "parameters": [],
++        "parameters": [
++          {
++            "description": "A unique value identifying this project repo.",
++            "required": true,
++            "type": "string",
++            "name": "project",
++            "in": "path"
++          }
++        ],
+         "tags": [
+           "repos"
+         ],
+@@ -4128,7 +4253,10 @@
+         "operationId": "repos_update_repo",
+         "responses": {
+           "201": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -4243,7 +4371,10 @@
+         "operationId": "roles_list",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -4267,7 +4398,10 @@
+         "operationId": "roles_read",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -4382,7 +4516,10 @@
+         "operationId": "tags_list",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       },
+@@ -4419,7 +4556,10 @@
+         ],
+         "responses": {
+           "201": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -4470,7 +4610,10 @@
+         ],
+         "responses": {
+           "201": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -4526,7 +4669,10 @@
+         ],
+         "responses": {
+           "201": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -4550,7 +4696,10 @@
+         "operationId": "tags_read",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -4686,7 +4835,10 @@
+         "operationId": "targets_list",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -4710,7 +4862,10 @@
+         "operationId": "targets_read",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -4832,7 +4987,10 @@
+         "operationId": "team_membership_list",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       },
+@@ -4880,7 +5038,10 @@
+         ],
+         "responses": {
+           "201": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -4904,7 +5065,10 @@
+         "operationId": "team_membership_read",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       },
+@@ -4959,7 +5123,10 @@
+         ],
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       },
+@@ -4981,7 +5148,10 @@
+         "operationId": "team_membership_delete",
+         "responses": {
+           "204": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -5222,7 +5392,10 @@
+         "operationId": "teams_list",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       },
+@@ -5291,7 +5464,10 @@
+         ],
+         "responses": {
+           "201": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -5315,7 +5491,10 @@
+         "operationId": "teams_read",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       },
+@@ -5391,7 +5570,10 @@
+         ],
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       },
+@@ -5413,7 +5595,10 @@
+         "operationId": "teams_delete",
+         "responses": {
+           "204": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -5500,7 +5685,10 @@
+         "operationId": "ticket_comments_list",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -5524,7 +5712,10 @@
+         "operationId": "ticket_comments_read",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -5674,7 +5865,10 @@
+         "operationId": "ticket_events_list",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -5698,7 +5892,10 @@
+         "operationId": "ticket_events_read",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -5897,7 +6094,10 @@
+         "operationId": "ticket_projects_list",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -5933,7 +6133,10 @@
+         ],
+         "responses": {
+           "201": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -5957,7 +6160,10 @@
+         "operationId": "ticket_projects_read",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -5981,7 +6187,10 @@
+         "operationId": "ticket_projects_delete_project",
+         "responses": {
+           "201": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -6236,7 +6445,10 @@
+         "operationId": "tickets_list",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -6260,7 +6472,10 @@
+         "operationId": "tickets_read",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -6515,7 +6730,10 @@
+         "operationId": "user_alias_list",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -6539,7 +6757,10 @@
+         "operationId": "user_alias_read",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -6612,7 +6833,10 @@
+         "operationId": "user_groups_list",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -6636,7 +6860,10 @@
+         "operationId": "user_groups_read",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -7094,7 +7321,10 @@
+         "operationId": "users_list",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       },
+@@ -7159,7 +7389,10 @@
+         ],
+         "responses": {
+           "201": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -7186,7 +7419,10 @@
+         ],
+         "responses": {
+           "201": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -7213,7 +7449,10 @@
+         ],
+         "responses": {
+           "201": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -7237,7 +7476,10 @@
+         "operationId": "users_read",
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       },
+@@ -7301,7 +7543,10 @@
+         ],
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -7395,7 +7640,10 @@
+         ],
+         "responses": {
+           "201": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       },
+@@ -7477,7 +7725,10 @@
+         ],
+         "responses": {
+           "200": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
+@@ -7536,7 +7787,10 @@
+         ],
+         "responses": {
+           "201": {
+-            "description": ""
++            "description": "",
++            "schema": {
++	      "type": "object"
++	    }
+           }
+         }
+       }
